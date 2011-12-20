@@ -79,7 +79,8 @@ class FavoritesController extends AppController {
 				$message = __d('favorites', 'Invalid identifier', true);
 			} else {
 				try {
-					$result = $Subject->saveFavorite($this->Auth->user('id'), $Subject->name, $type, $foreignKey);
+					$user_id = $this->Auth->user('id');
+					$result = $Subject->saveFavorite($user_id, $Subject->name, $type, $foreignKey);
 					if ($result) {
 						$status = 'success';
 						$message = __d('favorites', 'Record was successfully added', true);
@@ -93,7 +94,7 @@ class FavoritesController extends AppController {
 		}
 		$this->set(compact('status', 'message', 'type', 'foreignKey'));
 		if (!empty($this->params['isJson'])) {
-			return $this->render();
+			return $this->render('response');
 		} else {
 			return $this->redirect($this->referer());
 		}
@@ -109,15 +110,21 @@ class FavoritesController extends AppController {
 		$status = 'error';
 		if (($message = $this->_isOwner($id)) !== true) {
 			// Message defined
-		} else if ($this->Favorite->deleteRecord($id)) {
+		} else if ($result = $this->Favorite->deleteRecord($id)) {
+			$type = $result['type'];
+			$foreignKey = $result['id'];
 			$status = 'success';
 			$message = __d('favorites', 'Record removed from list', true);
 		} else {
 			$message = __d('favorites', 'Unable to delete favorite, please try again', true);
 		}
 
-		$this->set(compact('status', 'message'));
-		return $this->redirect($this->referer(), -999);
+		if (!empty($this->params['isJson'])) {
+			$this->set(compact('status', 'message', 'type', 'foreignKey'));
+			return $this->render('response');
+		} else {
+			return $this->redirect($this->referer(), -999);
+		}
 	}
 
 /**
@@ -135,7 +142,7 @@ class FavoritesController extends AppController {
 		$userId = $this->Auth->user('id');
 		$favorites = $this->Favorite->getByType($userId);
 		$this->set(compact('favorites', 'type'));
-		$this->render('list');
+		$this->render('add');
 	}
 
 /**
